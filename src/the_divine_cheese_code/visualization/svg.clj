@@ -22,3 +22,39 @@
         ratio {:lat (/ height (:lat maxcoords))
                :lng (/ width (:lng maxcoords))}]
     (map #(merge-with * % ratio) locations)))
+
+(defn latlng->point
+  "Convert lat/lng map to comma-separated string"
+  [latlng]
+  (str (:lat latlng) "," (:lng latlng)))
+
+(defn points
+  "Given a seq of lat/lng maps, return string of points joined by space"
+  [locations]
+  (s/join " " (map latlng->point locations)))
+
+(defn line
+  [points]
+  (str "<polyline points=\"" points "\" />"))
+
+(defn transform
+  "Just chains other functions"
+  [width height locations]
+  (->> locations
+       translate-to-00
+       (scale width height)))
+
+(defn xml
+  "svg 'template', which also flips the coordinate system"
+  [width height locations]
+  (str "<svg height=\"" height "\" width=\"" width "\">"
+       ;; These two <g> tags change the coordinate system so that
+       ;; 0,0 is in the lower-left corner, instead of SVG's default
+       ;; upper-left corner
+       "<g transform=\"translate(0," height ")\">"
+       "<g transform=\"rotate(-90)\">"
+       (-> (transform width height locations)
+           points
+           line)
+       "</g></g>"
+       "</svg>"))
